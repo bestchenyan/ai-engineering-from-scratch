@@ -40,12 +40,13 @@ RUN python -m pip install --no-cache-dir \
     transformers \
     datasets \
     accelerate \
-    safetensors
+    safetensors \
+    flask
 
 WORKDIR /workspace
 
 VOLUME ["/workspace", "/models"]
 
-EXPOSE 8888
+EXPOSE 8888 5000
 
 CMD ["python"]

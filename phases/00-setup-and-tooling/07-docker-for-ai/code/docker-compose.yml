@@ -20,6 +20,26 @@ services:
     tty: true
     command: jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root
 
+  ai-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - .:/workspace
+      - ~/models:/models
+    ports:
+      - "5000:5000" # 独占 5000 端口
+    command: python app.py  # 启动 Flask
+    depends_on:
+      - qdrant
+
   qdrant:
     image: qdrant/qdrant:v1.12.5
     ports:
