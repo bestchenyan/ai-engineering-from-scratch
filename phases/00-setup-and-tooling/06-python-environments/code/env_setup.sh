@@ -34,20 +34,32 @@ else
 fi
 
 PYTHON_CMD=""
-for cmd in python3 python; do
-    if command -v "$cmd" &> /dev/null; then
-        version=$("$cmd" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || true)
-        if [ -n "$version" ]; then
-            major=$(echo "$version" | cut -d. -f1)
-            minor=$(echo "$version" | cut -d. -f2)
-            if [ "$major" -ge "$PYTHON_MIN_MAJOR" ] && [ "$minor" -ge "$PYTHON_MIN_MINOR" ]; then
-                PYTHON_CMD="$cmd"
-                break
+
+# 优先：检查 uv 是否安装了满足条件的 Python
+if $HAS_UV; then
+    # 让 uv 寻找符合最低版本要求的 Python 路径
+    UV_PYTHON=$(uv python find ">=${PYTHON_MIN_MAJOR}.${PYTHON_MIN_MINOR}" 2>/dev/null || true)
+    if [ -n "$UV_PYTHON" ]; then
+        PYTHON_CMD="$UV_PYTHON"
+    fi
+fi
+
+# 备选：如果 uv 没找到，或者没有 uv，再退回到系统环境里找 python3 或 python
+if [ -z "$PYTHON_CMD" ]; then
+    for cmd in python3 python; do
+        if command -v "$cmd" &> /dev/null; then
+            version=$("$cmd" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || true)
+            if [ -n "$version" ]; then
+                major=$(echo "$version" | cut -d. -f1)
+                minor=$(echo "$version" | cut -d. -f2)
+                if [ "$major" -ge "$PYTHON_MIN_MAJOR" ] && [ "$minor" -ge "$PYTHON_MIN_MINOR" ]; then
+                    PYTHON_CMD="$cmd"
+                    break
+                fi
             fi
         fi
-    fi
-done
-
+    done
+fi
 if [ -z "$PYTHON_CMD" ]; then
     fail "Python ${PYTHON_MIN_MAJOR}.${PYTHON_MIN_MINOR}+ not found"
     echo ""
